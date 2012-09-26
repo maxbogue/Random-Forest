@@ -11,7 +11,7 @@ build-type:         Simple
 cabal-version:      >= 1.6
 
 executable DecisionTree
-    main-is:        DecisionTree.hs
+    main-is:        Main.hs
     build-depends:  base,
                     aeson,
                     attoparsec,

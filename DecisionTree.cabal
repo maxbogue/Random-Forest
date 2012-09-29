@@ -18,6 +18,9 @@ executable DecisionTree
                     bytestring,
                     ghc-prim,
                     random,
+                    random-extras,
+                    random-fu,
+                    random-source,
                     containers,
                     text,
                     utf8-string

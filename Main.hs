@@ -1,5 +1,7 @@
 import Control.Monad
 import qualified Data.Map as Map
+import Data.Random.RVar (runRVar)
+import Data.Random.Source.DevRandom
 
 import DecisionTree
 import RandomForest
@@ -40,13 +42,12 @@ root =
 main :: IO ()
 main = do
     let attrs = getAttributes root
-    {-[ | n <- [10, 20..100]]-}
     test_samples <- replicateM 1000 $ generateSample attrs root
     samples <- replicateM 100 $ generateSample attrs root
     let tree = generateDecisionTree attrs samples
     let results = map (\(choices, decision) -> decide choices tree == decision) test_samples
     print $ foldr (\v n -> if v then n else n + 1) 0 results
-    forest <- generateForest attrs samples 60 5 30
+    forest <- runRVar (generateForest attrs samples 60 5 30) DevURandom
     let results' = map (\(choices, decision) -> runForest choices forest == decision) test_samples
     print $ foldr (\v n -> if v then n else n + 1) 0 results
     return ()

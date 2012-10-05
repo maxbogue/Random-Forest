@@ -8,22 +8,20 @@ import Data.Traversable (traverse)
 import Data.Tuple (swap)
 import GHC.Exts (groupWith)
 import Data.Random.Extras (sample, choices)
-import Data.Random.RVar (runRVar)
-{-import System.Random-}
-import Data.Random.Source.DevRandom
+import Data.Random.RVar (RVar)
 
 import DecisionTree
 
 type RandomForest a = [DecisionTree a]
 
-generateForestDecisionTree :: Ord a => Attributes -> [Sample a] -> Int -> IO (DecisionTree a)
+generateForestDecisionTree :: Ord a => Attributes -> [Sample a] -> Int -> RVar (DecisionTree a)
 generateForestDecisionTree attrs samples m = case nub $ map snd samples of
     []  -> fail "Can't generate a decision tree without any samples."
     [d] -> return $ Decision d
     _   -> if Map.null attrs
         then return $ Decision $ mode $ map snd samples
         else do
-            attrPairs <- runRVar (sample m $ Map.assocs attrs) DevURandom
+            attrPairs <- sample m $ Map.assocs attrs
             let attrs' = Map.fromList attrPairs
             let best = bestAttribute attrs' samples
             subtrees <- mapM
@@ -35,9 +33,9 @@ generateForestDecisionTree attrs samples m = case nub $ map snd samples of
                 (attrs Map.! best)
             return $ Tree best $ Map.fromList subtrees
 
-generateForest :: Ord a => Attributes -> [Sample a] -> Int -> Int -> Int -> IO (RandomForest a)
+generateForest :: Ord a => Attributes -> [Sample a] -> Int -> Int -> Int -> RVar (RandomForest a)
 generateForest attrs samples n m size = replicateM size $ do
-    samples' <- runRVar (choices n samples) DevURandom
+    samples' <- choices n samples
     generateForestDecisionTree attrs samples' m
 
 runForest :: Ord a => Choices -> RandomForest a -> a

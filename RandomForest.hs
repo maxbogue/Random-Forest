@@ -14,9 +14,9 @@ import DecisionTree
 
 type RandomForest a = [DecisionTree a]
 
-generateForestDecisionTree :: Ord a => Attributes -> [Sample a] -> Int -> RVar (DecisionTree a)
-generateForestDecisionTree attrs samples m = case nub $ map snd samples of
-    []  -> fail "Can't generate a decision tree without any samples."
+makeDecisionTreeM :: Ord a => Attributes -> [Sample a] -> Int -> RVar (DecisionTree a)
+makeDecisionTreeM attrs samples m = case nub $ map snd samples of
+    []  -> fail "Can't gen a decision tree without any samples."
     [d] -> return $ Decision d
     _   -> if Map.null attrs
         then return $ Decision $ mode $ map snd samples
@@ -24,19 +24,22 @@ generateForestDecisionTree attrs samples m = case nub $ map snd samples of
             attrPairs <- sample m $ Map.assocs attrs
             let attrs' = Map.fromList attrPairs
             let best = bestAttribute attrs' samples
-            subtrees <- mapM
-                (\v -> case filterSamples best v samples of
+            subtrees <- forM (attrs Map.! best) $ \v ->
+                case filterSamples best v samples of
                     []       -> return $ (v, Decision $ mode $ map snd samples)
                     samples' -> do
-                        subtree <- generateForestDecisionTree (Map.delete best attrs) samples' m
-                        return (v, subtree))
-                (attrs Map.! best)
+                        subtree <- makeDecisionTreeM (Map.delete best attrs) samples' m
+                        return (v, subtree)
             return $ Tree best $ Map.fromList subtrees
 
-generateForest :: Ord a => Attributes -> [Sample a] -> Int -> Int -> Int -> RVar (RandomForest a)
-generateForest attrs samples n m size = replicateM size $ do
+makeRandomForest' :: Ord a => Attributes -> [Sample a] -> Int -> Int -> Int -> RVar (RandomForest a)
+makeRandomForest' attrs samples size n m = replicateM size $ do
     samples' <- choices n samples
-    generateForestDecisionTree attrs samples' m
+    makeDecisionTreeM attrs samples' m
+
+makeRandomForest attrs samples size = makeRandomForest' attrs samples size
+    (length samples)
+    (floor $ logBase 2 (fromIntegral $ Map.size attrs) + 1)
 
 runForest :: Ord a => Choices -> RandomForest a -> a
 runForest choices = mode . map (decide choices)

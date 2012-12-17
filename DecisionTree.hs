@@ -44,8 +44,8 @@ randomElement ls = do
     i <- randomRIO (0, length ls - 1)
     return $ ls !! i
 
-generateSample :: Attributes -> DecisionTree a -> IO (Choices, a)
-generateSample attrs tree = do
+makeSample :: Attributes -> DecisionTree a -> IO (Choices, a)
+makeSample attrs tree = do
     (choices, decision) <- walk tree
     missing <- traverse randomElement $ Map.difference attrs choices
     return (Map.union choices missing, decision)
@@ -75,8 +75,8 @@ bestAttribute attrs samples = snd $ maximum $ map (\(a, vs) -> (informationGain 
         priorH (v:vs) = let samples' = filterSamples attr v samples in
             (fromIntegral $ length samples') / numSamples * entropy samples' + priorH vs
 
-generateDecisionTree :: Ord a => Attributes -> [Sample a] -> DecisionTree a
-generateDecisionTree attrs samples = case nub $ map snd samples of
+makeDecisionTree :: Ord a => Attributes -> [Sample a] -> DecisionTree a
+makeDecisionTree attrs samples = case nub $ map snd samples of
     []  -> error "Can't generate a decision tree without any samples."
     [d] -> Decision d
     _   -> if Map.null attrs
@@ -85,5 +85,5 @@ generateDecisionTree attrs samples = case nub $ map snd samples of
             Tree best $ Map.fromList [
                 (v, case filterSamples best v samples of
                     []       -> Decision $ mode $ map snd samples
-                    samples' -> generateDecisionTree (Map.delete best attrs) samples')
+                    samples' -> makeDecisionTree (Map.delete best attrs) samples')
                 | v <- attrs Map.! best]

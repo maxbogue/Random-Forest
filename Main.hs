@@ -42,12 +42,12 @@ root =
 main :: IO ()
 main = do
     let attrs = getAttributes root
-    test_samples <- replicateM 1000 $ generateSample attrs root
-    samples <- replicateM 100 $ generateSample attrs root
-    let tree = generateDecisionTree attrs samples
+    test_samples <- replicateM 1000 $ makeSample attrs root
+    samples <- replicateM 100 $ makeSample attrs root
+    let tree = makeDecisionTree attrs samples
     let results = map (\(choices, decision) -> decide choices tree == decision) test_samples
     print $ foldr (\v n -> if v then n else n + 1) 0 results
-    forest <- runRVar (generateForest attrs samples 60 5 30) DevURandom
+    forest <- runRVar (makeRandomForest attrs samples 30) DevURandom
     let results' = map (\(choices, decision) -> runForest choices forest == decision) test_samples
     print $ foldr (\v n -> if v then n else n + 1) 0 results
     return ()
